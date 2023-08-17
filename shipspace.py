@@ -24,7 +24,7 @@ scenter_x, scenter_y = scenter
 # Scale of spaceship.
 scale = 0.10 * sdim_min
 # Maximum spaceship velocity, because space friction.
-v_max = 3
+v_max = 5
 
 screen = pygame.display.set_mode(sdim)
 
@@ -67,20 +67,23 @@ class Spaceship:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        # Rotation.
         self.rot = 0
-        # Velocities
-        self.vx = 0
-        self.vy = 0
-        # Accelerations
-        self.ax = 0
-        self.ay = 0
+        # Rotational velocity.
+        self.vrot = 0
+        # Velocity.
+        self.v = 0
+        # Acceleration.
+        self.a = 0
         self.model = spaceship_model
 
     def update(self, dt):
-        self.x += self.vx * dt
-        self.y += self.vy * dt
-        self.vx = min(self.vx + self.ax * dt, v_max)
-        self.vy = min(self.vy + self.ay * dt, v_max)
+        rx, ry = rotate((0.0, 1.0), self.rot)
+        self.x += self.v * rx * dt
+        self.y += self.v * ry * dt
+        self.v = min(self.v + self.a * dt, v_max)
+        self.rot += self.vrot
+        
         while self.x < 0:
             self.x += sdim_x
         while self.y < 0:
@@ -89,23 +92,21 @@ class Spaceship:
             self.x -= sdim_x
         while self.y > sdim_x:
             self.y -= sdim_y
+        while self.rot < 0:
+            self.rot += 2 * pi
+        while self.rot > 2 * pi:
+            self.rot -= 2 * pi
 
-    def rotate(self, dr):
-        self.rot += dr
-        self.vx, self.vy = rotate((self.vx, self.vy), self.rot)
-        self.ax, self.ay = rotate((self.ax, self.ay), self.rot)
+    def rotation(self, vrot):
+        self.vrot = vrot
 
     def thrust(self, a):
-        ax, ay = rotate((a, 0), self.rot)
-        self.ax = ax
-        self.ay = ay
+        self.a = a
 
     def render(self):
         display(self.model, (self.x, self.y), self.rot)
 
 ship = Spaceship(sdim_x / 4, sdim_y / 4)
-ship.thrust(sdim_min / 10)
-ship.rotate(pi / 6)
 
 running = True
 while running:
@@ -113,6 +114,20 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                ship.rotation(pi / 12)
+            elif event.key == pygame.K_RIGHT:
+                ship.rotation(-pi / 12)
+            elif event.key == pygame.K_UP:
+                ship.thrust(sdim_min / 10)
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                ship.rotation(0)
+            elif event.key == pygame.K_RIGHT:
+                ship.rotation(0)
+            elif event.key == pygame.K_UP:
+                ship.thrust(0)
 
     screen.fill((0, 0, 0))
     ship.update(0.01)
