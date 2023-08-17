@@ -1,3 +1,6 @@
+# Spaceship Game
+# Bart Massey and Portland State CS 410/510 Game Design 2023
+
 # Framework based on https://realpython.com/pygame-a-primer
 
 import pygame
@@ -13,14 +16,16 @@ vcolor = (0, 255, 0)
 # Dimensions of screen.
 sdim = (800, 800)
 sdim_x, sdim_y = sdim
+sdim_min = min(sdim_x, sdim_y)
 # Center of screen.
 scenter = (sdim[0] // 2, sdim[1] // 2)
 scenter_x, scenter_y = scenter
 
 # Scale of spaceship.
-scale = 0.10 * min(sdim_x, sdim_y)
+scale = 0.10 * sdim_min
+# Maximum spaceship velocity, because space friction.
+v_max = 3
 
-# Set up the drawing window
 screen = pygame.display.set_mode(sdim)
 
 def vector(start, end):
@@ -30,7 +35,7 @@ def vector(start, end):
     end = (end_x, sdim_y - end_y)
     pygame.draw.line(screen, vcolor, start, end, width=vwidth)
 
-# Facing right
+# Facing right, unit size.
 spaceship_model = (
     (0.2, 0.75),
     (1.0, 0.5),
@@ -58,23 +63,60 @@ def display(display_list, posn, rot):
     for start, end in vecs:
         vector(start, end)
 
-# Run until the user asks to quit
+class Spaceship:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.rot = 0
+        # Velocities
+        self.vx = 0
+        self.vy = 0
+        # Accelerations
+        self.ax = 0
+        self.ay = 0
+        self.model = spaceship_model
+
+    def update(self, dt):
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.vx = min(self.vx + self.ax * dt, v_max)
+        self.vy = min(self.vy + self.ay * dt, v_max)
+        while self.x < 0:
+            self.x += sdim_x
+        while self.y < 0:
+            self.y += sdim_y
+        while self.x > sdim_x:
+            self.x -= sdim_x
+        while self.y > sdim_x:
+            self.y -= sdim_y
+
+    def rotate(self, dr):
+        self.rot += dr
+        self.vx, self.vy = rotate((self.vx, self.vy), self.rot)
+        self.ax, self.ay = rotate((self.ax, self.ay), self.rot)
+
+    def thrust(self, a):
+        ax, ay = rotate((a, 0), self.rot)
+        self.ax = ax
+        self.ay = ay
+
+    def render(self):
+        display(self.model, (self.x, self.y), self.rot)
+
+ship = Spaceship(sdim_x / 4, sdim_y / 4)
+ship.thrust(sdim_min / 10)
+ship.rotate(pi / 6)
+
 running = True
 while running:
-
-    # Did the user click the window close button?
+    # Get user input.
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Fill the background.
     screen.fill((0, 0, 0))
-
-    # Draw a spaceship in the lower left quadrant facing up-right
-    display(spaceship_model, (sdim_x / 4, sdim_y / 4), pi/4)
-
-    # Flip the display
+    ship.update(0.01)
+    ship.render()
     pygame.display.flip()
 
-# Done! Time to quit.
 pygame.quit()
