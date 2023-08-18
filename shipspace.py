@@ -44,10 +44,10 @@ def point(posn):
 
 # Facing right, unit size.
 spaceship_model = (
-    (0.2, 0.75),
-    (1.0, 0.5),
-    (0.2, 0.25),
-    (0.35, 0.5),
+    (-0.3, 0.25),
+    (0.5, 0.0),
+    (-0.3, -0.25),
+    (-0.15, 0.0),
 )
 
 def rotate(p, rot, center = (0, 0)):
@@ -61,8 +61,7 @@ def rotate(p, rot, center = (0, 0)):
 
 def display(display_list, posn, rot):
     scaled = [(x * scale, y * scale) for x, y in display_list]
-    rotated = [rotate(p, rot, center=(0.5 * scale, 0.5 * scale))
-               for p in scaled]
+    rotated = [rotate(p, rot) for p in scaled]
     x_posn, y_posn = posn
     translated = [(x + x_posn, y + y_posn) for (x, y) in rotated]
     npoints = len(translated)
@@ -73,7 +72,7 @@ def display(display_list, posn, rot):
     for start, end in vecs:
         vector(start, end)
     # Show axis of rotation.
-    # point((0.5 * scale + x_posn, 0.5 * scale + y_posn))
+    point(posn)
 
 class Spaceship:
     def __init__(self, x, y):
@@ -90,23 +89,23 @@ class Spaceship:
         self.model = spaceship_model
 
     def update(self, dt):
-        rx, ry = rotate((0.0, 1.0), self.rot)
+        rx, ry = rotate((1.0, 0.0), self.rot)
         self.x += self.v * rx * dt
         self.y += self.v * ry * dt
         self.v = min(self.v + self.a * dt, v_max)
         self.rot += self.vrot * dt
         
-        while self.x < 0:
+        if self.x < 0:
             self.x += sdim_x
-        while self.y < 0:
+        if self.y < 0:
             self.y += sdim_y
-        while self.x > sdim_x:
+        if self.x > sdim_x:
             self.x -= sdim_x
-        while self.y > sdim_x:
+        if self.y > sdim_x:
             self.y -= sdim_y
-        while self.rot < 0:
+        if self.rot < 0:
             self.rot += 2 * pi
-        while self.rot > 2 * pi:
+        if self.rot > 2 * pi:
             self.rot -= 2 * pi
 
     def rotation(self, vrot):
