@@ -4,7 +4,7 @@
 # Framework based on https://realpython.com/pygame-a-primer
 
 import pygame
-from math import pi, sin, cos
+from math import pi, sin, cos, sqrt
 
 pygame.init()
 
@@ -24,9 +24,13 @@ scenter_x, scenter_y = scenter
 # Scale of spaceship.
 scale = 0.10 * sdim_min
 # Maximum spaceship velocity, because space friction.
-v_max = 5
+v_max = 20
 # Rotation velocity when key is held.
 v_rot = pi / 24
+# Acceleration when thruster is held.
+a_thrust = 5
+# Space friction reduces velocity.
+space_friction = 0.9995
 
 screen = pygame.display.set_mode(sdim)
 
@@ -72,7 +76,7 @@ def display(display_list, posn, rot):
     for start, end in vecs:
         vector(start, end)
     # Show axis of rotation.
-    point(posn)
+    #point(posn)
 
 class Spaceship:
     def __init__(self, x, y):
@@ -83,18 +87,28 @@ class Spaceship:
         # Rotational velocity.
         self.vrot = 0
         # Velocity.
-        self.v = 0
+        self.vx = 0
+        self.vy = 0
         # Acceleration.
         self.a = 0
         self.model = spaceship_model
 
     def update(self, dt):
         rx, ry = rotate((1.0, 0.0), self.rot)
-        self.x += self.v * rx * dt
-        self.y += self.v * ry * dt
-        self.v = min(self.v + self.a * dt, v_max)
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.vx += self.a * rx * dt
+        self.vx *= space_friction
+        self.vy += self.a * ry * dt
+        self.vy *= space_friction
         self.rot += self.vrot * dt
         
+        v2 = self.vx**2 + self.vy**2
+        if v2 > v_max**2:
+            s = sqrt(v2)
+            self.vx = v_max * self.vx / s
+            self.vy = v_max * self.vy / s
+
         if self.x < 0:
             self.x += sdim_x
         if self.y < 0:
@@ -103,6 +117,7 @@ class Spaceship:
             self.x -= sdim_x
         if self.y > sdim_x:
             self.y -= sdim_y
+
         if self.rot < 0:
             self.rot += 2 * pi
         if self.rot > 2 * pi:
@@ -131,7 +146,7 @@ while running:
             elif event.key == pygame.K_RIGHT:
                 ship.rotation(-v_rot)
             elif event.key == pygame.K_UP:
-                ship.thrust(sdim_min / 10)
+                ship.thrust(a_thrust)
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 ship.rotation(0)
